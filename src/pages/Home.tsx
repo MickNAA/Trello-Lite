@@ -58,7 +58,9 @@ export function Home() {
               className="bg-transparent text-sm font-medium text-ink outline-none"
             />
             <div className="flex gap-2">
-              <button onClick={submit} className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink">
+              <button 
+              disabled={draft.trim().length === 0}
+              onClick={submit} className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink">
                 Create
               </button>
               <button

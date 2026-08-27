@@ -123,6 +123,7 @@ export function Board({ board }: { board: BoardType }) {
                 <div className="mt-2 flex gap-2">
                   <button
                     onClick={submitNewList}
+                    disabled={listDraft.trim().length === 0}
                     className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink"
                   >
                     Add list

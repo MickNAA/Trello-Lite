@@ -32,7 +32,11 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
             rows={1}
             onBlur={(e) => {
               const v = e.target.value.trim();
-              if (v && v !== card.title) updateCard(card.id, { title: v });
+              if (v && v !== card.title) {
+                updateCard(card.id, { title: v });
+              } else if (titleRef.current) {
+                titleRef.current.value = card.title;
+              }
             }}
             className="w-full resize-none bg-transparent font-display text-lg font-bold leading-snug outline-none"
           />

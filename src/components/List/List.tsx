@@ -105,7 +105,8 @@ export function List({ list, onOpenCard }: ListProps) {
             <div className="mt-1 flex gap-2">
               <button
                 onClick={submitNewCard}
-                className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink"
+                disabled={draft.trim().length === 0}
+                className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Add
               </button>
