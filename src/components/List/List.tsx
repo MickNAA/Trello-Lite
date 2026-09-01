@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { List as ListType } from "../../types";
-import { useBoard } from "../../hooks/useBoard";
+import { useBoardStore } from "../../store/boardStore";
 import { Card } from "../Card/Card";
 import { InlineEditable } from "../ui/InlineEditable";
 
@@ -13,12 +13,13 @@ interface ListProps {
 }
 
 export function List({ list, onOpenCard }: ListProps) {
-  const { getCards, getLabels, addCard, renameList, deleteList } = useBoard();
+  const cards = useBoardStore((state) => state.getCards(list.id));
+  const labels = useBoardStore((state) => state.getLabels());
+  const addCard = useBoardStore((state) => state.addCard);
+  const renameList = useBoardStore((state) => state.renameList);
+  const deleteList = useBoardStore((state) => state.deleteList);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
-
-  const cards = getCards(list.id);
-  const labels = getLabels();
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: list.id,
@@ -45,17 +46,11 @@ export function List({ list, onOpenCard }: ListProps) {
         {...listeners}
         className="flex cursor-grab items-center justify-between gap-2 px-3 pb-1 pt-3 active:cursor-grabbing"
       >
-        <div className="flex items-center gap-2">
-          <InlineEditable
-            value={list.title}
-            onSave={(v) => renameList(list.id, v)}
-            className="font-display text-xs font-bold uppercase tracking-wide text-surface"
-          />
-          {cards.length > 0 && (<span 
-            className="rounded-full bg-line px-1.5 py-0.5 text-[10px] font-display text-surface/70" >
-              {cards.length}
-          </span>)}
-        </div>
+        <InlineEditable
+          value={list.title}
+          onSave={(v) => renameList(list.id, v)}
+          className="font-display text-xs font-bold uppercase tracking-wide text-surface"
+        />
         <button
           onClick={() => deleteList(list.id)}
           aria-label={`Delete list ${list.title}`}
@@ -106,7 +101,7 @@ export function List({ list, onOpenCard }: ListProps) {
               <button
                 onClick={submitNewCard}
                 disabled={draft.trim().length === 0}
-                className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink disabled:opacity-40 disabled:cursor-not-allowed"
+                className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink"
               >
                 Add
               </button>

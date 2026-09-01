@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useBoard } from "../hooks/useBoard";
+// import { useBoard } from "../hooks/useBoard";
+import { useBoardStore } from "../store/boardStore";
 
 export function Home() {
-  const { boards, addBoard, deleteBoard } = useBoard();
+  // const { boards, addBoard, deleteBoard } = useBoardStore();
+  const boards = useBoardStore((state) => state.getBoards());
+  const addBoard = useBoardStore((state) => state.addBoard);
+  const deleteBoard = useBoardStore((state) => state.deleteBoard);
   const [creating, setCreating] = useState(false);
   const [draft, setDraft] = useState("");
 

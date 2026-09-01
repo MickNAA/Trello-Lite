@@ -13,15 +13,25 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { Board as BoardType } from "../../types";
-import { useBoard } from "../../hooks/useBoard";
+import { useBoardStore } from "../../store/boardStore";
 import { List } from "../List/List";
 import { Card } from "../Card/Card";
 import { CardDetailModal } from "../Card/CardDetailModal";
 
 export function Board({ board }: { board: BoardType }) {
-  const { state, getLists, addList, reorderLists, reorderCards, moveCard, getLabels } = useBoard();
-  const lists = getLists(board.id);
-  const labels = getLabels();
+  // selector ที่คำนวณ array (ผ่านฟังก์ชันสำเร็จรูปใน store)
+  const lists = useBoardStore((state) => state.getLists(board.id));
+  const labels = useBoardStore((state) => state.getLabels());
+
+  // selector ที่ดึง record ดิบๆ — ใช้แทนที่ `state.lists` / `state.cards` เดิมจาก Context
+  const listsById = useBoardStore((state) => state.lists);
+  const cardsById = useBoardStore((state) => state.cards);
+
+  // action functions
+  const addList = useBoardStore((state) => state.addList);
+  const reorderLists = useBoardStore((state) => state.reorderLists);
+  const reorderCards = useBoardStore((state) => state.reorderCards);
+  const moveCard = useBoardStore((state) => state.moveCard);
 
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
   const [openCardId, setOpenCardId] = useState<string | null>(null);
@@ -48,7 +58,7 @@ export function Board({ board }: { board: BoardType }) {
 
     if (!overListId || activeListId === overListId) return;
 
-    const overCards = state.lists[overListId]?.cardIds ?? [];
+    const overCards = listsById[overListId]?.cardIds ?? [];
     const overIndex = overType === "card" ? overCards.indexOf(String(over.id)) : overCards.length;
 
     moveCard(String(active.id), activeListId, overListId, overIndex < 0 ? overCards.length : overIndex);
@@ -68,7 +78,7 @@ export function Board({ board }: { board: BoardType }) {
 
     if (active.data.current?.type === "card") {
       const listId = active.data.current.listId as string;
-      const cardIds = state.lists[listId]?.cardIds ?? [];
+      const cardIds = listsById[listId]?.cardIds ?? [];
       const oldIndex = cardIds.indexOf(String(active.id));
       const newIndex = cardIds.indexOf(String(over.id));
       if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
@@ -77,8 +87,8 @@ export function Board({ board }: { board: BoardType }) {
     }
   }
 
-  const activeCard = activeCardId ? state.cards[activeCardId] : null;
-  const openCard = openCardId ? state.cards[openCardId] : null;
+  const activeCard = activeCardId ? cardsById[activeCardId] : null;
+  const openCard = openCardId ? cardsById[openCardId] : null;
 
   function submitNewList() {
     const trimmed = listDraft.trim();
