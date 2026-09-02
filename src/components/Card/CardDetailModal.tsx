@@ -1,23 +1,18 @@
-// Modify on 31/08/2026 by Nakrit Start
-// import { useEffect, useRef } from "react";
-// import type { Card } from "../../types";
 import { useEffect, useRef, useState } from "react";
 import type { Card, LabelColor } from "../../types";
-// Modify on 31/08/2026 by Nakrit End
-import { useBoard } from "../../hooks/useBoard";
+import { useBoardStore } from "../../store/boardStore";
 import { LabelPill } from "../ui/LabelPill";
-// Add on 31/08/2026 by Nakrit Start
+
 const LABEL_COLORS: LabelColor[] = ["mustard", "rust", "pine", "slate", "plum"];
-// Add on 31/08/2026 by Nakrit End
 
 export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => void }) {
-  // Modify on 31/08/2026 by Nakrit Start
-  // const { getLabels, updateCard, deleteCard, toggleCardLabel } = useBoard();
-  const { getLabels, updateCard, deleteCard, toggleCardLabel, addLabel } = useBoard();
-  // Modify on 31/08/2026 by Nakrit End
+  const labels = useBoardStore((state) => state.getLabels());
+  const updateCard = useBoardStore((state) => state.updateCard);
+  const deleteCard = useBoardStore((state) => state.deleteCard);
+  const toggleCardLabel = useBoardStore((state) => state.toggleCardLabel);
+  const addLabel = useBoardStore((state) => state.addLabel);
   const titleRef = useRef<HTMLTextAreaElement>(null);
-  const labels = getLabels();
-  // Add on 31/08/2026 by Nakrit Start
+
   const [addingLabel, setAddingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState("");
   const [labelColor, setLabelColor] = useState<LabelColor>("mustard");
@@ -28,8 +23,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
     setLabelDraft("");
     setAddingLabel(false);
   }
-  // Add on 31/08/2026 by Nakrit End
-  
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -54,11 +48,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
             rows={1}
             onBlur={(e) => {
               const v = e.target.value.trim();
-              if (v && v !== card.title) {
-                updateCard(card.id, { title: v });
-              } else if (titleRef.current) {
-                titleRef.current.value = card.title;
-              }
+              if (v && v !== card.title) updateCard(card.id, { title: v });
             }}
             className="w-full resize-none bg-transparent font-display text-lg font-bold leading-snug outline-none"
           />
@@ -70,20 +60,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
             ESC
           </button>
         </div>
-        {/*Modify on 31/08/2026 by Nakrit Start*/}
-        {/* <div className="mt-4">
-          <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-wide text-ink-soft">Labels</p>
-          <div className="flex flex-wrap gap-1.5">
-            {labels.map((l) => {
-              const active = card.labelIds.includes(l.id);
-              return (
-                <button key={l.id} onClick={() => toggleCardLabel(card.id, l.id)} className={active ? "" : "opacity-40 hover:opacity-70"}>
-                  <LabelPill label={l} />
-                </button>
-              );
-            })}
-          </div>
-        </div> */}
+
         <div className="mt-4">
           <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-wide text-ink-soft">Labels</p>
           <div className="flex flex-wrap items-center gap-1.5">
@@ -95,6 +72,9 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
                 </button>
               );
             })}
+            {labels.length === 0 && !addingLabel && (
+              <span className="text-xs italic text-ink-soft">No labels yet.</span>
+            )}
             {!addingLabel && (
               <button
                 onClick={() => setAddingLabel(true)}
@@ -151,7 +131,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
             </div>
           )}
         </div>
-          {/*Modify on 31/08/2026 by Nakrit Start*/}
+
         <div className="mt-4">
           <p className="mb-1 font-display text-[11px] font-bold uppercase tracking-wide text-ink-soft">Due date</p>
           <input
