@@ -1,12 +1,13 @@
 import { Link, Navigate, useParams } from "react-router-dom";
-import { useBoard } from "../hooks/useBoard";
+import { useBoardStore } from "../store/boardStore";
 import { Board } from "../components/Board/Board";
 import { InlineEditable } from "../components/ui/InlineEditable";
 
 export function BoardPage() {
   const { boardId } = useParams();
-  const { getBoard, renameBoard } = useBoard();
-  const board = boardId ? getBoard(boardId) : undefined;
+
+  const board = useBoardStore((state) => (boardId ? state.getBoard(boardId) : undefined));
+  const renameBoard = useBoardStore((state) => state.renameBoard);
 
   if (!board) return <Navigate to="/" replace />;
 

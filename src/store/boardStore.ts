@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { boardReducer, type BoardAction } from "../context/boardReducer";
 import { createSeedState } from "../utils/seed";
-import type { BoardState, LabelColor} from "../types";
+import type { BoardState, LabelColor } from "../types";
 
 interface BoardStore extends BoardState {
   dispatch: (action: BoardAction) => void;
@@ -42,12 +42,10 @@ export const useBoardStore = create<BoardStore>()(
       dispatch: (action) => {
         set((state) => boardReducer(state, action));
       },
-      // Add on 01/09/2026 by Nakrit Start
       getBoards: () => {
         const state = get();
         return state.boardOrder.map((id) => state.boards[id]).filter(Boolean);
       },
-      // Add on 01/09/2026 by Nakrit End
       getBoard: (boardId) => get().boards[boardId],
       getLists: (boardId) => {
         const state = get();
