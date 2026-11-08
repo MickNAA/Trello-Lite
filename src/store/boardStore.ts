@@ -34,6 +34,24 @@ interface BoardStore extends BoardState {
   toggleCardLabel: (cardId: string, labelId: string) => void;
 }
 
+const STORAGE_KEY = "trello-lite:state";
+
+// The old Context version stored the raw BoardState under the same key.
+// zustand persist expects { state, version } — wrap old data so it isn't lost.
+function migrateLegacyStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === "object" && !("state" in parsed) && "boards" in parsed) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: parsed, version: 0 }));
+    }
+  } catch {
+    // ignore corrupted storage
+  }
+}
+migrateLegacyStorage();
+
 export const useBoardStore = create<BoardStore>()(
   persist(
     (set, get) => ({
@@ -78,6 +96,6 @@ export const useBoardStore = create<BoardStore>()(
       addLabel: (name, color) => get().dispatch({ type: "ADD_LABEL", name, color }),
       toggleCardLabel: (cardId, labelId) => get().dispatch({ type: "TOGGLE_CARD_LABEL", cardId, labelId }),
     }),
-    { name: "trello-lite:state" }
+    { name: STORAGE_KEY }
   )
 );

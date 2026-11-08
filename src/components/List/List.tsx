@@ -3,6 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { List as ListType } from "../../types";
+import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { Card } from "../Card/Card";
 import { InlineEditable } from "../ui/InlineEditable";
@@ -13,8 +14,8 @@ interface ListProps {
 }
 
 export function List({ list, onOpenCard }: ListProps) {
-  const cards = useBoardStore((state) => state.getCards(list.id));
-  const labels = useBoardStore((state) => state.getLabels());
+  const cards = useBoardStore(useShallow((state) => state.getCards(list.id)));
+  const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const addCard = useBoardStore((state) => state.addCard);
   const renameList = useBoardStore((state) => state.renameList);
   const deleteList = useBoardStore((state) => state.deleteList);

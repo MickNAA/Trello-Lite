@@ -13,6 +13,7 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { Board as BoardType } from "../../types";
+import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { List } from "../List/List";
 import { Card } from "../Card/Card";
@@ -20,8 +21,8 @@ import { CardDetailModal } from "../Card/CardDetailModal";
 
 export function Board({ board }: { board: BoardType }) {
   // selector ที่คำนวณ array (ผ่านฟังก์ชันสำเร็จรูปใน store)
-  const lists = useBoardStore((state) => state.getLists(board.id));
-  const labels = useBoardStore((state) => state.getLabels());
+  const lists = useBoardStore(useShallow((state) => state.getLists(board.id)));
+  const labels = useBoardStore(useShallow((state) => state.getLabels()));
 
   // selector ที่ดึง record ดิบๆ — ใช้แทนที่ `state.lists` / `state.cards` เดิมจาก Context
   const listsById = useBoardStore((state) => state.lists);

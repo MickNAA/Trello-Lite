@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../store/boardStore";
 
 export function Home() {
-  const boards = useBoardStore((state) => state.getBoards());
+  const boards = useBoardStore(useShallow((state) => state.getBoards()));
   const addBoard = useBoardStore((state) => state.addBoard);
   const deleteBoard = useBoardStore((state) => state.deleteBoard);
   const [creating, setCreating] = useState(false);
@@ -77,7 +78,7 @@ export function Home() {
         ) : (
           <button
             onClick={() => setCreating(true)}
-            className="flex h-28 flex-col items-center justify-center gap-1 rounded-md ring-1 ring-dashed ring-line text-surface/50 hover:bg-bg-soft hover:text-surface"
+            className="flex h-28 flex-col items-center justify-center gap-1 rounded-md border border-dashed border-line text-surface/50 hover:bg-bg-soft hover:text-surface"
           >
             <span className="text-2xl leading-none">+</span>
             <span className="font-display text-xs uppercase tracking-wide">New board</span>

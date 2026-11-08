@@ -10,9 +10,11 @@ interface CardProps {
 }
 
 function formatDueDate(iso: string) {
-  const date = new Date(iso);
-  const now = new Date();
-  const isOverdue = date < now;
+  // treat the due date as a local calendar day (also handles old ISO-with-time values)
+  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  const endOfDay = new Date(y, m - 1, d + 1);
+  const isOverdue = endOfDay <= new Date();
   const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
   return { label, isOverdue };
 }

@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import type { Card, LabelColor } from "../../types";
+import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { LabelPill } from "../ui/LabelPill";
 
 const LABEL_COLORS: LabelColor[] = ["mustard", "rust", "pine", "slate", "plum"];
 
 export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => void }) {
-  const labels = useBoardStore((state) => state.getLabels());
+  const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const updateCard = useBoardStore((state) => state.updateCard);
   const deleteCard = useBoardStore((state) => state.deleteCard);
   const toggleCardLabel = useBoardStore((state) => state.toggleCardLabel);
@@ -137,7 +138,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
           <input
             type="date"
             defaultValue={card.dueDate ? card.dueDate.slice(0, 10) : ""}
-            onChange={(e) => updateCard(card.id, { dueDate: e.target.value ? new Date(e.target.value).toISOString() : undefined })}
+            onChange={(e) => updateCard(card.id, { dueDate: e.target.value || undefined })}
             className="rounded-sm border border-line/40 bg-white/60 px-2 py-1 text-sm outline-none focus:border-accent"
           />
         </div>
