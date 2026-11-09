@@ -38,6 +38,7 @@ export function Board({ board }: { board: BoardType }) {
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [addingList, setAddingList] = useState(false);
   const [listDraft, setListDraft] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -100,6 +101,25 @@ export function Board({ board }: { board: BoardType }) {
 
   return (
     <div className="pegboard min-h-[calc(100vh-64px)] px-6 py-5">
+      <div className="relative mb-4 w-full max-w-xs">
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search cards…"
+          className="w-full rounded-sm border border-line/40 bg-bg-soft px-3 py-1.5 pr-7 text-sm text-surface placeholder:text-surface/40 outline-none focus:border-accent"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery("")}
+            aria-label="Clear search"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-surface/40 hover:text-surface"
+          >
+            ✕
+          </button>
+        )}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -110,7 +130,7 @@ export function Board({ board }: { board: BoardType }) {
         <div className="flex items-start gap-4 overflow-x-auto pb-4">
           <SortableContext items={board.listIds} strategy={horizontalListSortingStrategy}>
             {lists.map((list) => (
-              <List key={list.id} list={list} onOpenCard={setOpenCardId} />
+              <List key={list.id} list={list} onOpenCard={setOpenCardId} searchQuery={searchQuery} />
             ))}
           </SortableContext>
 

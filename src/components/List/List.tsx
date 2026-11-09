@@ -11,9 +11,10 @@ import { InlineEditable } from "../ui/InlineEditable";
 interface ListProps {
   list: ListType;
   onOpenCard: (cardId: string) => void;
+  searchQuery?: string;
 }
 
-export function List({ list, onOpenCard }: ListProps) {
+export function List({ list, onOpenCard, searchQuery = "" }: ListProps) {
   const cards = useBoardStore(useShallow((state) => state.getCards(list.id)));
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const addCard = useBoardStore((state) => state.addCard);
@@ -28,6 +29,11 @@ export function List({ list, onOpenCard }: ListProps) {
   });
 
   const style = { transform: CSS.Transform.toString(transform), transition };
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredCards = normalizedQuery
+    ? cards.filter((card) => card.title.toLowerCase().includes(normalizedQuery))
+    : cards;
 
   function submitNewCard() {
     const trimmed = draft.trim();
@@ -62,8 +68,8 @@ export function List({ list, onOpenCard }: ListProps) {
       </div>
 
       <div className="flex flex-col gap-2 overflow-y-auto px-2 py-2" style={{ maxHeight: "calc(100vh - 220px)" }}>
-        <SortableContext items={cards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-          {cards.map((card) => (
+        <SortableContext items={filteredCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          {filteredCards.map((card) => (
             <Card
               key={card.id}
               card={card}
@@ -72,8 +78,10 @@ export function List({ list, onOpenCard }: ListProps) {
             />
           ))}
         </SortableContext>
-        {cards.length === 0 && !adding && (
-          <p className="px-1 py-2 text-xs italic text-surface/30">No cards yet — pin one below.</p>
+        {filteredCards.length === 0 && !adding && (
+          <p className="px-1 py-2 text-xs italic text-surface/30">
+            {cards.length === 0 ? "No cards yet — pin one below." : "No cards match your search."}
+          </p>
         )}
       </div>
 
