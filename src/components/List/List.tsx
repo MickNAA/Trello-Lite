@@ -12,9 +12,10 @@ interface ListProps {
   list: ListType;
   onOpenCard: (cardId: string) => void;
   searchQuery?: string;
+  labelFilter?: string[];
 }
 
-export function List({ list, onOpenCard, searchQuery = "" }: ListProps) {
+export function List({ list, onOpenCard, searchQuery = "", labelFilter = [] }: ListProps) {
   const cards = useBoardStore(useShallow((state) => state.getCards(list.id)));
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const addCard = useBoardStore((state) => state.addCard);
@@ -31,9 +32,13 @@ export function List({ list, onOpenCard, searchQuery = "" }: ListProps) {
   const style = { transform: CSS.Transform.toString(transform), transition };
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
-  const filteredCards = normalizedQuery
-    ? cards.filter((card) => card.title.toLowerCase().includes(normalizedQuery))
-    : cards;
+  const filteredCards = cards.filter((card) => {
+    const matchesText = !normalizedQuery || card.title.toLowerCase().includes(normalizedQuery);
+    // OR logic: การ์ดมี label ใดก็ได้ในที่เลือก (ถ้าไม่ได้เลือกเลย = ผ่านทุกใบ)
+    const matchesLabel =
+      labelFilter.length === 0 || card.labelIds.some((id) => labelFilter.includes(id));
+    return matchesText && matchesLabel;
+  });
 
   function submitNewCard() {
     const trimmed = draft.trim();
@@ -80,7 +85,7 @@ export function List({ list, onOpenCard, searchQuery = "" }: ListProps) {
         </SortableContext>
         {filteredCards.length === 0 && !adding && (
           <p className="px-1 py-2 text-xs italic text-surface/30">
-            {cards.length === 0 ? "No cards yet — pin one below." : "No cards match your search."}
+            {cards.length === 0 ? "No cards yet — pin one below." : "No cards match your filter."}
           </p>
         )}
       </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+ import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -17,6 +17,7 @@ import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { List } from "../List/List";
 import { Card } from "../Card/Card";
+import { LabelPill } from "../ui/LabelPill";
 import { CardDetailModal } from "../Card/CardDetailModal";
 
 export function Board({ board }: { board: BoardType }) {
@@ -39,6 +40,13 @@ export function Board({ board }: { board: BoardType }) {
   const [addingList, setAddingList] = useState(false);
   const [listDraft, setListDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [labelFilter, setLabelFilter] = useState<string[]>([]);
+
+  function toggleLabelFilter(labelId: string) {
+    setLabelFilter((prev) =>
+      prev.includes(labelId) ? prev.filter((id) => id !== labelId) : [...prev, labelId]
+    );
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -101,7 +109,8 @@ export function Board({ board }: { board: BoardType }) {
 
   return (
     <div className="pegboard min-h-[calc(100vh-64px)] px-6 py-5">
-      <div className="relative mb-4 w-full max-w-xs">
+      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <div className="relative w-full max-w-xs">
         <input
           type="text"
           value={searchQuery}
@@ -120,6 +129,33 @@ export function Board({ board }: { board: BoardType }) {
         )}
       </div>
 
+      {labels.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {labels.map((l) => {
+            const active = labelFilter.includes(l.id);
+            return (
+              <button
+                key={l.id}
+                onClick={() => toggleLabelFilter(l.id)}
+                aria-pressed={active}
+                className={`rounded-sm transition-opacity ${active ? "ring-2 ring-accent" : "opacity-60 hover:opacity-100"}`}
+              >
+                <LabelPill label={l} />
+              </button>
+            );
+          })}
+          {labelFilter.length > 0 && (
+            <button
+              onClick={() => setLabelFilter([])}
+              className="px-1 text-xs text-surface/50 hover:text-surface"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      )}
+      </div>
+
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -130,7 +166,7 @@ export function Board({ board }: { board: BoardType }) {
         <div className="flex items-start gap-4 overflow-x-auto pb-4">
           <SortableContext items={board.listIds} strategy={horizontalListSortingStrategy}>
             {lists.map((list) => (
-              <List key={list.id} list={list} onOpenCard={setOpenCardId} searchQuery={searchQuery} />
+              <List key={list.id} list={list} onOpenCard={setOpenCardId} searchQuery={searchQuery} labelFilter={labelFilter} />
             ))}
           </SortableContext>
 
