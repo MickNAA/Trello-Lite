@@ -6,13 +6,20 @@ export interface Label {
   color: LabelColor;
 }
 
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
+}
+
 export interface Card {
   id: string;
   listId: string;
   title: string;
   description?: string;
-  dueDate?: string; // ISO date string
+  dueDate?: string;
   labelIds: string[];
+  checklist?: ChecklistItem[]; 
   createdAt: number;
 }
 

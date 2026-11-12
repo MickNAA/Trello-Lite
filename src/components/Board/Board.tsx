@@ -21,15 +21,13 @@ import { LabelPill } from "../ui/LabelPill";
 import { CardDetailModal } from "../Card/CardDetailModal";
 
 export function Board({ board }: { board: BoardType }) {
-  // selector ที่คำนวณ array (ผ่านฟังก์ชันสำเร็จรูปใน store)
+
   const lists = useBoardStore(useShallow((state) => state.getLists(board.id)));
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
 
-  // selector ที่ดึง record ดิบๆ — ใช้แทนที่ `state.lists` / `state.cards` เดิมจาก Context
   const listsById = useBoardStore((state) => state.lists);
   const cardsById = useBoardStore((state) => state.cards);
 
-  // action functions
   const addList = useBoardStore((state) => state.addList);
   const reorderLists = useBoardStore((state) => state.reorderLists);
   const reorderCards = useBoardStore((state) => state.reorderCards);

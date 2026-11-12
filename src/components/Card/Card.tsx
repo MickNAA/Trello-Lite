@@ -10,7 +10,6 @@ interface CardProps {
 }
 
 function formatDueDate(iso: string) {
-  // treat the due date as a local calendar day (also handles old ISO-with-time values)
   const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
   const date = new Date(y, m - 1, d);
   const endOfDay = new Date(y, m - 1, d + 1);
@@ -31,6 +30,9 @@ export function Card({ card, labels, onOpen }: CardProps) {
   };
 
   const due = card.dueDate ? formatDueDate(card.dueDate) : null;
+  const checklist = card.checklist ?? [];
+  const doneCount = checklist.filter((item) => item.done).length;
+  const allDone = checklist.length > 0 && doneCount === checklist.length;
 
   return (
     <div
@@ -51,15 +53,27 @@ export function Card({ card, labels, onOpen }: CardProps) {
         </div>
       )}
       <p className="text-sm font-medium leading-snug">{card.title}</p>
+      {(due || checklist.length > 0) && <div className="mt-2 flex flex-wrap items-center gap-1.5">
       {due && (
         <span
-          className={`mt-2 inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide ${
+          className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide ${
             due.isOverdue ? "bg-rust text-surface" : "bg-surface-2 text-ink-soft"
           }`}
         >
           {due.label}
         </span>
       )}
+      {checklist.length > 0 && (
+        <span
+          className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wide ${
+            allDone ? "bg-pine text-surface" : "bg-surface-2 text-ink-soft"
+          }`}
+        >
+          ✓ {doneCount}/{checklist.length}
+        </span>
+      )}
+      </div>}
     </div>
   );
 }
+

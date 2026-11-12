@@ -16,7 +16,10 @@ export type BoardAction =
   | { type: "REORDER_CARDS"; listId: string; startIndex: number; endIndex: number }
   | { type: "MOVE_CARD"; cardId: string; fromListId: string; toListId: string; toIndex: number }
   | { type: "ADD_LABEL"; name: string; color: LabelColor }
-  | { type: "TOGGLE_CARD_LABEL"; cardId: string; labelId: string };
+  | { type: "TOGGLE_CARD_LABEL"; cardId: string; labelId: string }
+  | { type: "ADD_CHECKLIST_ITEM"; cardId: string; text: string }
+  | { type: "TOGGLE_CHECKLIST_ITEM"; cardId: string; itemId: string }
+  | { type: "DELETE_CHECKLIST_ITEM"; cardId: string; itemId: string };
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
   switch (action.type) {
@@ -179,6 +182,30 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       const has = card.labelIds.includes(action.labelId);
       const labelIds = has ? card.labelIds.filter((id) => id !== action.labelId) : [...card.labelIds, action.labelId];
       return { ...state, cards: { ...state.cards, [card.id]: { ...card, labelIds } } };
+    }
+
+    case "ADD_CHECKLIST_ITEM": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const item = { id: nanoid(), text: action.text, done: false };
+      const checklist = [...(card.checklist ?? []), item];
+      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
+    }
+
+    case "TOGGLE_CHECKLIST_ITEM": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const checklist = (card.checklist ?? []).map((item) =>
+        item.id === action.itemId ? { ...item, done: !item.done } : item
+      );
+      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
+    }
+
+    case "DELETE_CHECKLIST_ITEM": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const checklist = (card.checklist ?? []).filter((item) => item.id !== action.itemId);
+      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
     }
 
     default:

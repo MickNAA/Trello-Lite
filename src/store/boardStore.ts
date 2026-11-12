@@ -32,12 +32,14 @@ interface BoardStore extends BoardState {
 
   addLabel: (name: string, color: LabelColor) => void;
   toggleCardLabel: (cardId: string, labelId: string) => void;
+
+  addChecklistItem: (cardId: string, text: string) => void;
+  toggleChecklistItem: (cardId: string, itemId: string) => void;
+  deleteChecklistItem: (cardId: string, itemId: string) => void;
 }
 
 const STORAGE_KEY = "trello-lite:state";
 
-// The old Context version stored the raw BoardState under the same key.
-// zustand persist expects { state, version } — wrap old data so it isn't lost.
 function migrateLegacyStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,7 +49,6 @@ function migrateLegacyStorage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
   } catch {
-    // ignore corrupted storage
   }
 }
 migrateLegacyStorage();
@@ -95,6 +96,10 @@ export const useBoardStore = create<BoardStore>()(
 
       addLabel: (name, color) => get().dispatch({ type: "ADD_LABEL", name, color }),
       toggleCardLabel: (cardId, labelId) => get().dispatch({ type: "TOGGLE_CARD_LABEL", cardId, labelId }),
+
+      addChecklistItem: (cardId, text) => get().dispatch({ type: "ADD_CHECKLIST_ITEM", cardId, text }),
+      toggleChecklistItem: (cardId, itemId) => get().dispatch({ type: "TOGGLE_CHECKLIST_ITEM", cardId, itemId }),
+      deleteChecklistItem: (cardId, itemId) => get().dispatch({ type: "DELETE_CHECKLIST_ITEM", cardId, itemId }),
     }),
     { name: STORAGE_KEY }
   )

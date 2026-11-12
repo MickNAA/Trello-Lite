@@ -12,11 +12,26 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
   const deleteCard = useBoardStore((state) => state.deleteCard);
   const toggleCardLabel = useBoardStore((state) => state.toggleCardLabel);
   const addLabel = useBoardStore((state) => state.addLabel);
+  const addChecklistItem = useBoardStore((state) => state.addChecklistItem);
+  const toggleChecklistItem = useBoardStore((state) => state.toggleChecklistItem);
+  const deleteChecklistItem = useBoardStore((state) => state.deleteChecklistItem);
   const titleRef = useRef<HTMLTextAreaElement>(null);
 
   const [addingLabel, setAddingLabel] = useState(false);
   const [labelDraft, setLabelDraft] = useState("");
   const [labelColor, setLabelColor] = useState<LabelColor>("mustard");
+
+  const [itemDraft, setItemDraft] = useState("");
+
+  const checklist = card.checklist ?? [];
+  const doneCount = checklist.filter((item) => item.done).length;
+  const percent = checklist.length === 0 ? 0 : Math.round((doneCount / checklist.length) * 100);
+
+  function submitNewItem() {
+    const trimmed = itemDraft.trim();
+    if (trimmed) addChecklistItem(card.id, trimmed);
+    setItemDraft("");
+  }
 
   function submitNewLabel() {
     const trimmed = labelDraft.trim();
@@ -141,6 +156,66 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
             onChange={(e) => updateCard(card.id, { dueDate: e.target.value || undefined })}
             className="rounded-sm border border-line/40 bg-white/60 px-2 py-1 text-sm outline-none focus:border-accent"
           />
+        </div>
+
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between">
+            <p className="font-display text-[11px] font-bold uppercase tracking-wide text-ink-soft">Checklist</p>
+            {checklist.length > 0 && (
+              <span className="font-display text-[11px] text-ink-soft">
+                {doneCount}/{checklist.length}
+              </span>
+            )}
+          </div>
+
+          {checklist.length > 0 && (
+            <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
+              <div
+                className={`h-full transition-all ${percent === 100 ? "bg-pine" : "bg-accent"}`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          )}
+
+          <ul className="flex flex-col gap-1">
+            {checklist.map((item) => (
+              <li key={item.id} className="group flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={item.done}
+                  onChange={() => toggleChecklistItem(card.id, item.id)}
+                  className="h-4 w-4 accent-[var(--color-pine)]"
+                />
+                <span className={`flex-1 text-sm ${item.done ? "text-ink-soft line-through" : ""}`}>{item.text}</span>
+                <button
+                  onClick={() => deleteChecklistItem(card.id, item.id)}
+                  aria-label={`Delete ${item.text}`}
+                  className="hidden rounded-sm px-1 text-xs text-ink-soft hover:bg-surface-2 group-hover:block"
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              value={itemDraft}
+              onChange={(e) => setItemDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitNewItem();
+              }}
+              placeholder="Add an item…"
+              className="flex-1 rounded-sm border border-line/40 bg-white/60 px-2 py-1 text-sm outline-none focus:border-accent"
+            />
+            <button
+              onClick={submitNewItem}
+              disabled={itemDraft.trim().length === 0}
+              className="rounded-sm bg-accent px-2 py-1 font-display text-[11px] font-bold uppercase text-ink"
+            >
+              Add
+            </button>
+          </div>
         </div>
 
         <div className="mt-4">
