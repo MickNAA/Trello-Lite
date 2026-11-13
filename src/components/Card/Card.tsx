@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { Card as CardType, Label } from "../../types";
 import { LabelPill } from "../ui/LabelPill";
+import { ProgressBar } from "../ui/ProgressBar";
 
 interface CardProps {
   card: CardType;
@@ -73,7 +74,11 @@ export function Card({ card, labels, onOpen }: CardProps) {
         </span>
       )}
       </div>}
+      {checklist.length > 0 && (
+        <div className="mt-2">
+          <ProgressBar done={doneCount} total={checklist.length} heightClass="h-1" />
+        </div>
+      )}
     </div>
   );
 }
-

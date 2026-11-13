@@ -3,6 +3,7 @@ import type { Card, LabelColor } from "../../types";
 import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { LabelPill } from "../ui/LabelPill";
+import { ProgressBar } from "../ui/ProgressBar";
 
 const LABEL_COLORS: LabelColor[] = ["mustard", "rust", "pine", "slate", "plum"];
 
@@ -25,7 +26,6 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
 
   const checklist = card.checklist ?? [];
   const doneCount = checklist.filter((item) => item.done).length;
-  const percent = checklist.length === 0 ? 0 : Math.round((doneCount / checklist.length) * 100);
 
   function submitNewItem() {
     const trimmed = itemDraft.trim();
@@ -169,11 +169,8 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
           </div>
 
           {checklist.length > 0 && (
-            <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-surface-2">
-              <div
-                className={`h-full transition-all ${percent === 100 ? "bg-pine" : "bg-accent"}`}
-                style={{ width: `${percent}%` }}
-              />
+            <div className="mb-2">
+              <ProgressBar done={doneCount} total={checklist.length} />
             </div>
           )}
 
