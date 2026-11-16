@@ -12,14 +12,28 @@ export interface ChecklistItem {
   done: boolean;
 }
 
+export interface CardComment {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
+export interface ActivityEntry {
+  id: string;
+  text: string;
+  createdAt: number;
+}
+
 export interface Card {
   id: string;
   listId: string;
   title: string;
   description?: string;
-  dueDate?: string;
+  dueDate?: string; // ISO date string
   labelIds: string[];
-  checklist?: ChecklistItem[]; 
+  checklist?: ChecklistItem[]; // optional: การ์ดเก่าที่เซฟไว้ไม่มีฟิลด์นี้
+  comments?: CardComment[];
+  activity?: ActivityEntry[];
   createdAt: number;
 }
 

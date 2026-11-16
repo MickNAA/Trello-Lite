@@ -1,6 +1,15 @@
 import { nanoid } from "nanoid";
-import type { BoardState, LabelColor } from "../types";
+import type { BoardState, Card, LabelColor } from "../types";
 import { insertAt, reorder } from "../utils/reorder";
+
+const MAX_ACTIVITY = 50;
+
+// เติมบันทึกกิจกรรม 1 รายการลงการ์ด (pure: คืนการ์ดใหม่ ไม่แก้ของเดิม) เก็บแค่ 50 รายการล่าสุด
+function withActivity(card: Card, text: string): Card {
+  const entry = { id: nanoid(), text, createdAt: Date.now() };
+  const activity = [...(card.activity ?? []), entry].slice(-MAX_ACTIVITY);
+  return { ...card, activity };
+}
 
 export type BoardAction =
   | { type: "ADD_BOARD"; title: string }
@@ -19,7 +28,9 @@ export type BoardAction =
   | { type: "TOGGLE_CARD_LABEL"; cardId: string; labelId: string }
   | { type: "ADD_CHECKLIST_ITEM"; cardId: string; text: string }
   | { type: "TOGGLE_CHECKLIST_ITEM"; cardId: string; itemId: string }
-  | { type: "DELETE_CHECKLIST_ITEM"; cardId: string; itemId: string };
+  | { type: "DELETE_CHECKLIST_ITEM"; cardId: string; itemId: string }
+  | { type: "ADD_COMMENT"; cardId: string; text: string }
+  | { type: "DELETE_COMMENT"; cardId: string; commentId: string };
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
   switch (action.type) {
@@ -111,12 +122,13 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       const list = state.lists[action.listId];
       if (!list) return state;
       const id = nanoid();
+      const newCard = withActivity(
+        { id, listId: list.id, title: action.title, labelIds: [], createdAt: Date.now() },
+        `Created in "${list.title}"`
+      );
       return {
         ...state,
-        cards: {
-          ...state.cards,
-          [id]: { id, listId: list.id, title: action.title, labelIds: [], createdAt: Date.now() },
-        },
+        cards: { ...state.cards, [id]: newCard },
         lists: { ...state.lists, [list.id]: { ...list, cardIds: [...list.cardIds, id] } },
       };
     }
@@ -124,7 +136,22 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
     case "UPDATE_CARD": {
       const card = state.cards[action.cardId];
       if (!card) return state;
-      return { ...state, cards: { ...state.cards, [card.id]: { ...card, ...action.patch } } };
+      let updated: Card = { ...card, ...action.patch };
+
+      if (action.patch.title !== undefined && action.patch.title !== card.title) {
+        updated = withActivity(updated, `Renamed to "${action.patch.title}"`);
+      }
+      if ("dueDate" in action.patch && action.patch.dueDate !== card.dueDate) {
+        updated = withActivity(
+          updated,
+          action.patch.dueDate ? `Set due date to ${action.patch.dueDate.slice(0, 10)}` : "Removed due date"
+        );
+      }
+      if (action.patch.description !== undefined && action.patch.description !== (card.description ?? "")) {
+        updated = withActivity(updated, "Edited description");
+      }
+
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
     case "DELETE_CARD": {
@@ -160,9 +187,16 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
           ? insertAt(fromCardIds, action.cardId, action.toIndex)
           : insertAt(toList.cardIds, action.cardId, action.toIndex);
 
+      // ย้ายข้ามลิสต์เท่านั้นถึงจะบันทึก (จัดลำดับใน list เดิมไม่นับ)
+      const moved = { ...card, listId: toList.id };
+      const nextCard =
+        action.fromListId === action.toListId
+          ? moved
+          : withActivity(moved, `Moved from "${fromList.title}" to "${toList.title}"`);
+
       return {
         ...state,
-        cards: { ...state.cards, [card.id]: { ...card, listId: toList.id } },
+        cards: { ...state.cards, [card.id]: nextCard },
         lists: {
           ...state.lists,
           [fromList.id]: { ...fromList, cardIds: action.fromListId === action.toListId ? toCardIds : fromCardIds },
@@ -181,7 +215,9 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       if (!card) return state;
       const has = card.labelIds.includes(action.labelId);
       const labelIds = has ? card.labelIds.filter((id) => id !== action.labelId) : [...card.labelIds, action.labelId];
-      return { ...state, cards: { ...state.cards, [card.id]: { ...card, labelIds } } };
+      const labelName = state.labels[action.labelId]?.name ?? "label";
+      const updated = withActivity({ ...card, labelIds }, `${has ? "Removed" : "Added"} label "${labelName}"`);
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
     case "ADD_CHECKLIST_ITEM": {
@@ -189,23 +225,50 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       if (!card) return state;
       const item = { id: nanoid(), text: action.text, done: false };
       const checklist = [...(card.checklist ?? []), item];
-      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
+      const updated = withActivity({ ...card, checklist }, `Added checklist item "${action.text}"`);
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
     case "TOGGLE_CHECKLIST_ITEM": {
       const card = state.cards[action.cardId];
       if (!card) return state;
+      const target = (card.checklist ?? []).find((item) => item.id === action.itemId);
+      if (!target) return state;
       const checklist = (card.checklist ?? []).map((item) =>
         item.id === action.itemId ? { ...item, done: !item.done } : item
       );
-      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
+      const updated = withActivity(
+        { ...card, checklist },
+        target.done ? `Marked "${target.text}" as not done` : `Completed "${target.text}"`
+      );
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
     case "DELETE_CHECKLIST_ITEM": {
       const card = state.cards[action.cardId];
       if (!card) return state;
+      const target = (card.checklist ?? []).find((item) => item.id === action.itemId);
+      if (!target) return state;
       const checklist = (card.checklist ?? []).filter((item) => item.id !== action.itemId);
-      return { ...state, cards: { ...state.cards, [card.id]: { ...card, checklist } } };
+      const updated = withActivity({ ...card, checklist }, `Removed checklist item "${target.text}"`);
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "ADD_COMMENT": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const comment = { id: nanoid(), text: action.text, createdAt: Date.now() };
+      const comments = [...(card.comments ?? []), comment];
+      const updated = withActivity({ ...card, comments }, "Added a comment");
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "DELETE_COMMENT": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const comments = (card.comments ?? []).filter((c) => c.id !== action.commentId);
+      const updated = withActivity({ ...card, comments }, "Deleted a comment");
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
     default:

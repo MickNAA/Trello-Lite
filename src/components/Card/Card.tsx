@@ -19,6 +19,9 @@ function formatDueDate(iso: string) {
   return { label, isOverdue };
 }
 
+const BADGE_BASE =
+  "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wide";
+
 export function Card({ card, labels, onOpen }: CardProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: card.id,
@@ -34,6 +37,8 @@ export function Card({ card, labels, onOpen }: CardProps) {
   const checklist = card.checklist ?? [];
   const doneCount = checklist.filter((item) => item.done).length;
   const allDone = checklist.length > 0 && doneCount === checklist.length;
+  const commentCount = card.comments?.length ?? 0;
+  const hasBadges = due !== null || checklist.length > 0 || commentCount > 0;
 
   return (
     <div
@@ -54,26 +59,31 @@ export function Card({ card, labels, onOpen }: CardProps) {
         </div>
       )}
       <p className="text-sm font-medium leading-snug">{card.title}</p>
-      {(due || checklist.length > 0) && <div className="mt-2 flex flex-wrap items-center gap-1.5">
-      {due && (
-        <span
-          className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold uppercase tracking-wide ${
-            due.isOverdue ? "bg-rust text-surface" : "bg-surface-2 text-ink-soft"
-          }`}
-        >
-          {due.label}
-        </span>
+
+      {hasBadges && (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          {due && (
+            <span
+              className={`${BADGE_BASE} uppercase ${
+                due.isOverdue ? "bg-rust text-surface" : "bg-surface-2 text-ink-soft"
+              }`}
+            >
+              {due.label}
+            </span>
+          )}
+          {checklist.length > 0 && (
+            <span className={`${BADGE_BASE} ${allDone ? "bg-pine text-surface" : "bg-surface-2 text-ink-soft"}`}>
+              ✓ {doneCount}/{checklist.length}
+            </span>
+          )}
+          {commentCount > 0 && (
+            <span className={`${BADGE_BASE} bg-surface-2 text-ink-soft`} aria-label={`${commentCount} comments`}>
+              💬 {commentCount}
+            </span>
+          )}
+        </div>
       )}
-      {checklist.length > 0 && (
-        <span
-          className={`inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wide ${
-            allDone ? "bg-pine text-surface" : "bg-surface-2 text-ink-soft"
-          }`}
-        >
-          ✓ {doneCount}/{checklist.length}
-        </span>
-      )}
-      </div>}
+
       {checklist.length > 0 && (
         <div className="mt-2">
           <ProgressBar done={doneCount} total={checklist.length} heightClass="h-1" />

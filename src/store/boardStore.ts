@@ -36,6 +36,9 @@ interface BoardStore extends BoardState {
   addChecklistItem: (cardId: string, text: string) => void;
   toggleChecklistItem: (cardId: string, itemId: string) => void;
   deleteChecklistItem: (cardId: string, itemId: string) => void;
+
+  addComment: (cardId: string, text: string) => void;
+  deleteComment: (cardId: string, commentId: string) => void;
 }
 
 const STORAGE_KEY = "trello-lite:state";
@@ -49,6 +52,7 @@ function migrateLegacyStorage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
   } catch {
+    // ignore corrupted storage
   }
 }
 migrateLegacyStorage();
@@ -100,6 +104,9 @@ export const useBoardStore = create<BoardStore>()(
       addChecklistItem: (cardId, text) => get().dispatch({ type: "ADD_CHECKLIST_ITEM", cardId, text }),
       toggleChecklistItem: (cardId, itemId) => get().dispatch({ type: "TOGGLE_CHECKLIST_ITEM", cardId, itemId }),
       deleteChecklistItem: (cardId, itemId) => get().dispatch({ type: "DELETE_CHECKLIST_ITEM", cardId, itemId }),
+
+      addComment: (cardId, text) => get().dispatch({ type: "ADD_COMMENT", cardId, text }),
+      deleteComment: (cardId, commentId) => get().dispatch({ type: "DELETE_COMMENT", cardId, commentId }),
     }),
     { name: STORAGE_KEY }
   )
