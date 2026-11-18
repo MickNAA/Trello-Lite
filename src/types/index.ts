@@ -29,11 +29,12 @@ export interface Card {
   listId: string;
   title: string;
   description?: string;
-  dueDate?: string; // ISO date string
+  dueDate?: string;
   labelIds: string[];
-  checklist?: ChecklistItem[]; // optional: การ์ดเก่าที่เซฟไว้ไม่มีฟิลด์นี้
+  checklist?: ChecklistItem[];
   comments?: CardComment[];
   activity?: ActivityEntry[];
+  archivedAt?: number;
   createdAt: number;
 }
 

@@ -12,6 +12,7 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const updateCard = useBoardStore((state) => state.updateCard);
   const deleteCard = useBoardStore((state) => state.deleteCard);
+  const archiveCard = useBoardStore((state) => state.archiveCard);
   const toggleCardLabel = useBoardStore((state) => state.toggleCardLabel);
   const addLabel = useBoardStore((state) => state.addLabel);
   const addChecklistItem = useBoardStore((state) => state.addChecklistItem);
@@ -32,7 +33,6 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
   const checklist = card.checklist ?? [];
   const doneCount = checklist.filter((item) => item.done).length;
 
-  // ใหม่สุดอยู่บน: เก็บเป็นเก่า→ใหม่ใน state แล้วกลับลำดับตอนแสดงผล
   const comments = [...(card.comments ?? [])].reverse();
   const activity = [...(card.activity ?? [])].reverse();
   const visibleActivity = showAllActivity ? activity : activity.slice(0, 5);
@@ -312,15 +312,28 @@ export function CardDetailModal({ card, onClose }: { card: Card; onClose: () => 
           </div>
         )}
 
-        <button
-          onClick={() => {
-            deleteCard(card.id);
-            onClose();
-          }}
-          className="mt-5 font-display text-xs font-bold uppercase tracking-wide text-rust hover:underline"
-        >
-          Delete card
-        </button>
+        <div className="mt-5 flex items-center gap-4">
+          <button
+            onClick={() => {
+              archiveCard(card.id);
+              onClose();
+            }}
+            className="rounded-sm bg-surface-2 px-2 py-1 font-display text-xs font-bold uppercase tracking-wide text-ink-soft hover:bg-line/20"
+          >
+            Archive
+          </button>
+          <button
+            onClick={() => {
+              if (confirm(`Delete "${card.title}" permanently? Archive keeps it restorable.`)) {
+                deleteCard(card.id);
+                onClose();
+              }
+            }}
+            className="font-display text-xs font-bold uppercase tracking-wide text-rust hover:underline"
+          >
+            Delete card
+          </button>
+        </div>
       </div>
     </div>
   );

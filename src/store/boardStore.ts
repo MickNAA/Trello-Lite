@@ -13,6 +13,7 @@ interface BoardStore extends BoardState {
   getLists: (boardId: string) => BoardState["lists"][string][];
   getCards: (listId: string) => BoardState["cards"][string][];
   getLabels: () => BoardState["labels"][string][];
+  getArchivedCards: (boardId: string) => BoardState["cards"][string][];
 
   // actions
   addBoard: (title: string) => void;
@@ -39,6 +40,9 @@ interface BoardStore extends BoardState {
 
   addComment: (cardId: string, text: string) => void;
   deleteComment: (cardId: string, commentId: string) => void;
+
+  archiveCard: (cardId: string) => void;
+  restoreCard: (cardId: string) => void;
 }
 
 const STORAGE_KEY = "trello-lite:state";
@@ -52,7 +56,7 @@ function migrateLegacyStorage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
   } catch {
-    // ignore corrupted storage
+    // ignore
   }
 }
 migrateLegacyStorage();
@@ -76,9 +80,20 @@ export const useBoardStore = create<BoardStore>()(
       },
       getCards: (listId) => {
         const state = get();
-        return (state.lists[listId]?.cardIds ?? []).map((id) => state.cards[id]).filter(Boolean);
+        return (state.lists[listId]?.cardIds ?? [])
+          .map((id) => state.cards[id])
+          .filter((card) => card && !card.archivedAt); // การ์ดที่ archive ไม่แสดงบนบอร์ด
       },
       getLabels: () => Object.values(get().labels),
+      getArchivedCards: (boardId) => {
+        const state = get();
+        const listIds = state.boards[boardId]?.listIds ?? [];
+        return listIds
+          .flatMap((listId) => state.lists[listId]?.cardIds ?? [])
+          .map((id) => state.cards[id])
+          .filter((card) => card && card.archivedAt)
+          .sort((a, b) => (b.archivedAt ?? 0) - (a.archivedAt ?? 0)); // archive ล่าสุดอยู่บน
+      },
 
       addBoard: (title) => get().dispatch({ type: "ADD_BOARD", title }),
       renameBoard: (boardId, title) => get().dispatch({ type: "RENAME_BOARD", boardId, title }),
@@ -107,6 +122,9 @@ export const useBoardStore = create<BoardStore>()(
 
       addComment: (cardId, text) => get().dispatch({ type: "ADD_COMMENT", cardId, text }),
       deleteComment: (cardId, commentId) => get().dispatch({ type: "DELETE_COMMENT", cardId, commentId }),
+
+      archiveCard: (cardId) => get().dispatch({ type: "ARCHIVE_CARD", cardId }),
+      restoreCard: (cardId) => get().dispatch({ type: "RESTORE_CARD", cardId }),
     }),
     { name: STORAGE_KEY }
   )

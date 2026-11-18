@@ -9,6 +9,8 @@ export function BoardPage() {
   const board = useBoardStore((state) => (boardId ? state.getBoard(boardId) : undefined));
   const renameBoard = useBoardStore((state) => state.renameBoard);
 
+  const archivedCount = useBoardStore((state) => (boardId ? state.getArchivedCards(boardId).length : 0));
+
   if (!board) return <Navigate to="/" replace />;
 
   return (
@@ -22,6 +24,12 @@ export function BoardPage() {
           onSave={(v) => renameBoard(board.id, v)}
           className="font-display text-base font-bold text-surface"
         />
+        <Link
+          to={`/board/${board.id}/archive`}
+          className="ml-auto font-display text-xs uppercase tracking-wide text-surface/50 hover:text-surface"
+        >
+          Archive{archivedCount > 0 ? ` (${archivedCount})` : ""}
+        </Link>
       </header>
       <Board board={board} />
     </div>

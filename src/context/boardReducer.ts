@@ -30,7 +30,9 @@ export type BoardAction =
   | { type: "TOGGLE_CHECKLIST_ITEM"; cardId: string; itemId: string }
   | { type: "DELETE_CHECKLIST_ITEM"; cardId: string; itemId: string }
   | { type: "ADD_COMMENT"; cardId: string; text: string }
-  | { type: "DELETE_COMMENT"; cardId: string; commentId: string };
+  | { type: "DELETE_COMMENT"; cardId: string; commentId: string }
+  | { type: "ARCHIVE_CARD"; cardId: string }
+  | { type: "RESTORE_CARD"; cardId: string };
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
   switch (action.type) {
@@ -138,6 +140,7 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       if (!card) return state;
       let updated: Card = { ...card, ...action.patch };
 
+      // บันทึกเฉพาะสิ่งที่เปลี่ยนจริง (ฟอร์มบางช่องยิง update ทุกครั้งที่ blur แม้ค่าเท่าเดิม)
       if (action.patch.title !== undefined && action.patch.title !== card.title) {
         updated = withActivity(updated, `Renamed to "${action.patch.title}"`);
       }
@@ -268,6 +271,22 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       if (!card) return state;
       const comments = (card.comments ?? []).filter((c) => c.id !== action.commentId);
       const updated = withActivity({ ...card, comments }, "Deleted a comment");
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "ARCHIVE_CARD": {
+      const card = state.cards[action.cardId];
+      if (!card || card.archivedAt) return state;
+      // ไม่เอา id ออกจาก list.cardIds: การ์ดยังอยู่ตำแหน่งเดิม แค่ถูกซ่อน restore แล้วกลับที่เดิมพอดี
+      const updated = withActivity({ ...card, archivedAt: Date.now() }, "Archived this card");
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "RESTORE_CARD": {
+      const card = state.cards[action.cardId];
+      if (!card || !card.archivedAt) return state;
+      const { archivedAt: _removed, ...rest } = card;
+      const updated = withActivity(rest, "Restored this card");
       return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
 
