@@ -1,3 +1,5 @@
+export type CardSort = "dueDate" | "title" | "newest" | "oldest";
+
 export type LabelColor = "mustard" | "rust" | "pine" | "slate" | "plum";
 
 export interface Label {
@@ -34,6 +36,7 @@ export interface Card {
   checklist?: ChecklistItem[];
   comments?: CardComment[];
   activity?: ActivityEntry[];
+  cover?: LabelColor;
   archivedAt?: number;
   createdAt: number;
 }

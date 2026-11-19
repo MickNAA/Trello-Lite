@@ -1,10 +1,9 @@
 import { nanoid } from "nanoid";
-import type { BoardState, Card, LabelColor } from "../types";
+import type { BoardState, Card, CardSort, LabelColor } from "../types";
 import { insertAt, reorder } from "../utils/reorder";
 
 const MAX_ACTIVITY = 50;
 
-// เติมบันทึกกิจกรรม 1 รายการลงการ์ด (pure: คืนการ์ดใหม่ ไม่แก้ของเดิม) เก็บแค่ 50 รายการล่าสุด
 function withActivity(card: Card, text: string): Card {
   const entry = { id: nanoid(), text, createdAt: Date.now() };
   const activity = [...(card.activity ?? []), entry].slice(-MAX_ACTIVITY);
@@ -32,7 +31,22 @@ export type BoardAction =
   | { type: "ADD_COMMENT"; cardId: string; text: string }
   | { type: "DELETE_COMMENT"; cardId: string; commentId: string }
   | { type: "ARCHIVE_CARD"; cardId: string }
-  | { type: "RESTORE_CARD"; cardId: string };
+  | { type: "RESTORE_CARD"; cardId: string }
+  | { type: "DUPLICATE_CARD"; cardId: string }
+  | { type: "SET_CARD_COVER"; cardId: string; cover: LabelColor | undefined }
+  | { type: "SORT_CARDS"; listId: string; by: CardSort };
+
+const CARD_COMPARATORS: Record<CardSort, (a: Card, b: Card) => number> = {
+  dueDate: (a, b) => {
+    if (!a.dueDate && !b.dueDate) return 0;
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return a.dueDate.slice(0, 10).localeCompare(b.dueDate.slice(0, 10));
+  },
+  title: (a, b) => a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: "base" }),
+  newest: (a, b) => b.createdAt - a.createdAt,
+  oldest: (a, b) => a.createdAt - b.createdAt,
+};
 
 export function boardReducer(state: BoardState, action: BoardAction): BoardState {
   switch (action.type) {
@@ -140,7 +154,6 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       if (!card) return state;
       let updated: Card = { ...card, ...action.patch };
 
-      // บันทึกเฉพาะสิ่งที่เปลี่ยนจริง (ฟอร์มบางช่องยิง update ทุกครั้งที่ blur แม้ค่าเท่าเดิม)
       if (action.patch.title !== undefined && action.patch.title !== card.title) {
         updated = withActivity(updated, `Renamed to "${action.patch.title}"`);
       }
@@ -277,7 +290,6 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
     case "ARCHIVE_CARD": {
       const card = state.cards[action.cardId];
       if (!card || card.archivedAt) return state;
-      // ไม่เอา id ออกจาก list.cardIds: การ์ดยังอยู่ตำแหน่งเดิม แค่ถูกซ่อน restore แล้วกลับที่เดิมพอดี
       const updated = withActivity({ ...card, archivedAt: Date.now() }, "Archived this card");
       return { ...state, cards: { ...state.cards, [card.id]: updated } };
     }
@@ -288,6 +300,62 @@ export function boardReducer(state: BoardState, action: BoardAction): BoardState
       const { archivedAt: _removed, ...rest } = card;
       const updated = withActivity(rest, "Restored this card");
       return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "DUPLICATE_CARD": {
+      const card = state.cards[action.cardId];
+      if (!card) return state;
+      const list = state.lists[card.listId];
+      if (!list) return state;
+
+      const id = nanoid();
+      const copy = withActivity(
+        {
+          id,
+          listId: card.listId,
+          title: `${card.title} (copy)`,
+          description: card.description,
+          dueDate: card.dueDate,
+          cover: card.cover,
+          labelIds: [...card.labelIds],
+          checklist: card.checklist?.map((item) => ({ ...item, id: nanoid() })),
+          createdAt: Date.now(),
+        },
+        `Copied from "${card.title}"`
+      );
+
+      // วางต่อจากใบต้นฉบับทันที
+      const index = list.cardIds.indexOf(card.id);
+      const cardIds = insertAt(list.cardIds, id, index + 1);
+
+      return {
+        ...state,
+        cards: { ...state.cards, [id]: copy },
+        lists: { ...state.lists, [list.id]: { ...list, cardIds } },
+      };
+    }
+
+    case "SET_CARD_COVER": {
+      const card = state.cards[action.cardId];
+      if (!card || card.cover === action.cover) return state;
+      const { cover: _old, ...rest } = card;
+      const base = action.cover ? { ...rest, cover: action.cover } : rest;
+      const updated = withActivity(base, action.cover ? `Set cover to ${action.cover}` : "Removed cover");
+      return { ...state, cards: { ...state.cards, [card.id]: updated } };
+    }
+
+    case "SORT_CARDS": {
+      const list = state.lists[action.listId];
+      if (!list) return state;
+      const compare = CARD_COMPARATORS[action.by];
+      // .sort() แก้ array เดิม จึงต้อง copy ก่อนด้วย [...] (immutable)
+      const cardIds = [...list.cardIds].sort((idA, idB) => {
+        const a = state.cards[idA];
+        const b = state.cards[idB];
+        if (!a || !b) return 0;
+        return compare(a, b);
+      });
+      return { ...state, lists: { ...state.lists, [list.id]: { ...list, cardIds } } };
     }
 
     default:

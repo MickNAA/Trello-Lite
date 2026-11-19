@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { boardReducer, type BoardAction } from "../context/boardReducer";
 import { createSeedState } from "../utils/seed";
-import type { BoardState, LabelColor } from "../types";
+import type { BoardState, CardSort, LabelColor } from "../types";
 
 interface BoardStore extends BoardState {
   dispatch: (action: BoardAction) => void;
@@ -43,6 +43,11 @@ interface BoardStore extends BoardState {
 
   archiveCard: (cardId: string) => void;
   restoreCard: (cardId: string) => void;
+
+  duplicateCard: (cardId: string) => void;
+  setCardCover: (cardId: string, cover: LabelColor | undefined) => void;
+
+  sortCards: (listId: string, by: CardSort) => void;
 }
 
 const STORAGE_KEY = "trello-lite:state";
@@ -56,7 +61,7 @@ function migrateLegacyStorage() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ state: parsed, version: 0 }));
     }
   } catch {
-    // ignore
+    // ignore 
   }
 }
 migrateLegacyStorage();
@@ -82,7 +87,7 @@ export const useBoardStore = create<BoardStore>()(
         const state = get();
         return (state.lists[listId]?.cardIds ?? [])
           .map((id) => state.cards[id])
-          .filter((card) => card && !card.archivedAt); // การ์ดที่ archive ไม่แสดงบนบอร์ด
+          .filter((card) => card && !card.archivedAt);
       },
       getLabels: () => Object.values(get().labels),
       getArchivedCards: (boardId) => {
@@ -125,6 +130,11 @@ export const useBoardStore = create<BoardStore>()(
 
       archiveCard: (cardId) => get().dispatch({ type: "ARCHIVE_CARD", cardId }),
       restoreCard: (cardId) => get().dispatch({ type: "RESTORE_CARD", cardId }),
+
+      duplicateCard: (cardId) => get().dispatch({ type: "DUPLICATE_CARD", cardId }),
+      setCardCover: (cardId, cover) => get().dispatch({ type: "SET_CARD_COVER", cardId, cover }),
+
+      sortCards: (listId, by) => get().dispatch({ type: "SORT_CARDS", listId, by }),
     }),
     { name: STORAGE_KEY }
   )

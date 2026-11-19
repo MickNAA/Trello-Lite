@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { List as ListType } from "../../types";
+import type { CardSort, List as ListType } from "../../types";
+import { getDueStatus } from "../../utils/due";
 import { useShallow } from "zustand/react/shallow";
 import { useBoardStore } from "../../store/boardStore";
 import { Card } from "../Card/Card";
@@ -13,14 +14,23 @@ interface ListProps {
   onOpenCard: (cardId: string) => void;
   searchQuery?: string;
   labelFilter?: string[];
+  overdueOnly?: boolean;
 }
 
-export function List({ list, onOpenCard, searchQuery = "", labelFilter = [] }: ListProps) {
+const SORT_OPTIONS: { value: CardSort; label: string }[] = [
+  { value: "dueDate", label: "Due date" },
+  { value: "title", label: "Name (A–Z)" },
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+];
+
+export function List({ list, onOpenCard, searchQuery = "", labelFilter = [], overdueOnly = false }: ListProps) {
   const cards = useBoardStore(useShallow((state) => state.getCards(list.id)));
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
   const addCard = useBoardStore((state) => state.addCard);
   const renameList = useBoardStore((state) => state.renameList);
   const deleteList = useBoardStore((state) => state.deleteList);
+  const sortCards = useBoardStore((state) => state.sortCards);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState("");
 
@@ -34,10 +44,10 @@ export function List({ list, onOpenCard, searchQuery = "", labelFilter = [] }: L
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const filteredCards = cards.filter((card) => {
     const matchesText = !normalizedQuery || card.title.toLowerCase().includes(normalizedQuery);
-    // OR logic: การ์ดมี label ใดก็ได้ในที่เลือก (ถ้าไม่ได้เลือกเลย = ผ่านทุกใบ)
     const matchesLabel =
       labelFilter.length === 0 || card.labelIds.some((id) => labelFilter.includes(id));
-    return matchesText && matchesLabel;
+    const matchesDue = !overdueOnly || (card.dueDate !== undefined && getDueStatus(card.dueDate) === "overdue");
+    return matchesText && matchesLabel && matchesDue;
   });
 
   function submitNewCard() {
@@ -71,6 +81,28 @@ export function List({ list, onOpenCard, searchQuery = "", labelFilter = [] }: L
           ✕
         </button>
       </div>
+
+      {cards.length > 1 && (
+        <div className="px-3">
+          <select
+            value=""
+            onChange={(e) => {
+              if (e.target.value) sortCards(list.id, e.target.value as CardSort);
+            }}
+            aria-label={`Sort cards in ${list.title}`}
+            className="cursor-pointer bg-transparent font-display text-[10px] uppercase tracking-wide text-surface/40 outline-none hover:text-surface"
+          >
+            <option value="" disabled>
+              Sort by…
+            </option>
+            {SORT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value} className="bg-bg text-surface">
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div className="flex flex-col gap-2 overflow-y-auto px-2 py-2" style={{ maxHeight: "calc(100vh - 220px)" }}>
         <SortableContext items={filteredCards.map((c) => c.id)} strategy={verticalListSortingStrategy}>

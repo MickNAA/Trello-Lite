@@ -1,4 +1,4 @@
- import { useState } from "react";
+import { useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -21,7 +21,6 @@ import { LabelPill } from "../ui/LabelPill";
 import { CardDetailModal } from "../Card/CardDetailModal";
 
 export function Board({ board }: { board: BoardType }) {
-
   const lists = useBoardStore(useShallow((state) => state.getLists(board.id)));
   const labels = useBoardStore(useShallow((state) => state.getLabels()));
 
@@ -39,6 +38,7 @@ export function Board({ board }: { board: BoardType }) {
   const [listDraft, setListDraft] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [labelFilter, setLabelFilter] = useState<string[]>([]);
+  const [overdueOnly, setOverdueOnly] = useState(false);
 
   function toggleLabelFilter(labelId: string) {
     setLabelFilter((prev) =>
@@ -152,6 +152,16 @@ export function Board({ board }: { board: BoardType }) {
           )}
         </div>
       )}
+
+      <button
+        onClick={() => setOverdueOnly((prev) => !prev)}
+        aria-pressed={overdueOnly}
+        className={`rounded-sm px-2 py-1 font-display text-[11px] font-bold uppercase tracking-wide transition-colors ${
+          overdueOnly ? "bg-rust text-surface" : "text-surface/50 ring-1 ring-line/50 hover:text-surface"
+        }`}
+      >
+        Overdue only
+      </button>
       </div>
 
       <DndContext
@@ -164,7 +174,7 @@ export function Board({ board }: { board: BoardType }) {
         <div className="flex items-start gap-4 overflow-x-auto pb-4">
           <SortableContext items={board.listIds} strategy={horizontalListSortingStrategy}>
             {lists.map((list) => (
-              <List key={list.id} list={list} onOpenCard={setOpenCardId} searchQuery={searchQuery} labelFilter={labelFilter} />
+              <List key={list.id} list={list} onOpenCard={setOpenCardId} searchQuery={searchQuery} labelFilter={labelFilter} overdueOnly={overdueOnly} />
             ))}
           </SortableContext>
 

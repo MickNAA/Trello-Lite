@@ -3,6 +3,8 @@ import { CSS } from "@dnd-kit/utilities";
 import type { Card as CardType, Label } from "../../types";
 import { LabelPill } from "../ui/LabelPill";
 import { ProgressBar } from "../ui/ProgressBar";
+import { COLOR_BG } from "../../utils/colors";
+import { formatDueLabel, getDueStatus, type DueStatus } from "../../utils/due";
 
 interface CardProps {
   card: CardType;
@@ -10,14 +12,17 @@ interface CardProps {
   onOpen: () => void;
 }
 
-function formatDueDate(iso: string) {
-  const [y, m, d] = iso.slice(0, 10).split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  const endOfDay = new Date(y, m - 1, d + 1);
-  const isOverdue = endOfDay <= new Date();
-  const label = date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  return { label, isOverdue };
-}
+const DUE_STYLE: Record<DueStatus, string> = {
+  overdue: "bg-rust text-surface",
+  soon: "bg-accent text-ink",
+  later: "bg-surface-2 text-ink-soft",
+};
+
+const DUE_TITLE: Record<DueStatus, string> = {
+  overdue: "Overdue",
+  soon: "Due soon",
+  later: "Due date",
+};
 
 const BADGE_BASE =
   "inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 font-display text-[10px] font-bold tracking-wide";
@@ -33,7 +38,7 @@ export function Card({ card, labels, onOpen }: CardProps) {
     transition,
   };
 
-  const due = card.dueDate ? formatDueDate(card.dueDate) : null;
+  const due = card.dueDate ? { label: formatDueLabel(card.dueDate), status: getDueStatus(card.dueDate) } : null;
   const checklist = card.checklist ?? [];
   const doneCount = checklist.filter((item) => item.done).length;
   const allDone = checklist.length > 0 && doneCount === checklist.length;
@@ -51,6 +56,7 @@ export function Card({ card, labels, onOpen }: CardProps) {
         isDragging ? "opacity-40" : ""
       }`}
     >
+      {card.cover && <div aria-hidden className={`-mx-3 -mt-2 mb-2 h-7 ${COLOR_BG[card.cover]}`} />}
       {labels.length > 0 && (
         <div className="mb-1.5 flex flex-wrap gap-1">
           {labels.map((l) => (
@@ -63,11 +69,8 @@ export function Card({ card, labels, onOpen }: CardProps) {
       {hasBadges && (
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           {due && (
-            <span
-              className={`${BADGE_BASE} uppercase ${
-                due.isOverdue ? "bg-rust text-surface" : "bg-surface-2 text-ink-soft"
-              }`}
-            >
+            <span className={`${BADGE_BASE} uppercase ${DUE_STYLE[due.status]}`} title={DUE_TITLE[due.status]}>
+              {due.status === "overdue" ? "! " : ""}
               {due.label}
             </span>
           )}
